@@ -16,6 +16,15 @@
   .tag { font-size:19px; color:var(--accent); margin:0 0 18px; font-weight:600; }
   p { color:var(--muted); font-size:17px; line-height:1.65; margin:0 0 16px; }
   .badge { display:inline-block; margin-top:10px; padding:8px 16px; border:1px solid var(--accent2); border-radius:999px; color:var(--ink); font-size:14px; letter-spacing:.4px; }
+  .waitlist { margin-top:26px; }
+  .waitlist form { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .waitlist input[type=email] { flex:1 1 260px; max-width:340px; padding:13px 18px; border-radius:999px; border:1px solid #2c3944; background:var(--card); color:var(--ink); font-size:16px; outline:none; }
+  .waitlist input[type=email]:focus { border-color:var(--accent); }
+  .waitlist button { padding:13px 24px; border-radius:999px; border:0; background:linear-gradient(120deg,var(--accent),var(--accent2)); color:#14100c; font-size:16px; font-weight:700; cursor:pointer; }
+  .waitlist button:disabled { opacity:.6; cursor:default; }
+  .waitlist .note { font-size:14px; margin-top:12px; min-height:20px; }
+  .waitlist .note.ok { color:var(--accent); }
+  .waitlist .note.err { color:#e88; }
   footer { padding:22px 20px 30px; text-align:center; color:var(--muted); font-size:14px; }
   footer a { color:var(--accent); text-decoration:none; margin:0 10px; }
   footer a:hover { text-decoration:underline; }
@@ -30,6 +39,39 @@
     <p>Chinook is an activity-first dating app from Calgary, Alberta. Instead of endless swiping, you discover people through real activities and invitations — and meet when both of you actually say yes.</p>
     <p>Named for the warm wind that melts a Calgary winter overnight. Good connections should feel like that.</p>
     <div class="badge">Coming soon — private beta in preparation</div>
+    <div class="waitlist">
+      <form id="waitlist-form" novalidate>
+        <input type="email" id="waitlist-email" name="email" placeholder="you@example.com" autocomplete="email" required aria-label="Email address">
+        <button type="submit" id="waitlist-btn">Join the waitlist</button>
+      </form>
+      <p class="note" id="waitlist-note">Be first to know when we launch in Calgary. One email at launch — no spam.</p>
+    </div>
+    <script>
+      (function () {
+        var form = document.getElementById('waitlist-form');
+        var input = document.getElementById('waitlist-email');
+        var btn = document.getElementById('waitlist-btn');
+        var note = document.getElementById('waitlist-note');
+        var ENDPOINT = 'https://lnorvfdtbmwbgckzdvzk.supabase.co/rest/v1/waitlist_signups';
+        var KEY = 'sb_publishable_gc38kB2hNLuWiu0BW-kD0A_AgQ3GS66';
+        function say(msg, cls) { note.textContent = msg; note.className = 'note ' + (cls || ''); }
+        form.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var email = (input.value || '').trim().toLowerCase();
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { say('Please enter a valid email address.', 'err'); input.focus(); return; }
+          btn.disabled = true; say('Joining…');
+          fetch(ENDPOINT, {
+            method: 'POST',
+            headers: { 'apikey': KEY, 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+            body: JSON.stringify({ email: email, source: 'website' })
+          }).then(function (res) {
+            if (res.status === 201) { form.style.display = 'none'; say('You’re on the list — watch your inbox as we get closer to launch.', 'ok'); }
+            else if (res.status === 409) { say('You’re already on the list. See you at launch.', 'ok'); btn.disabled = false; }
+            else { say('Something went wrong — please try again in a moment.', 'err'); btn.disabled = false; }
+          }).catch(function () { say('Network hiccup — please try again.', 'err'); btn.disabled = false; });
+        });
+      })();
+    </script>
   </div>
 </main>
 <footer>
